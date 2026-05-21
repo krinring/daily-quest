@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>今日のお題</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #1a1a1a;
+  --surface: #232323;
+  --surface2: #2c2c2c;
+  --surface3: #363636;
+  --accent: #6b89a8;
+  --accent-glow: rgba(107, 137, 168, 0.15);
+  --accent-dim: #1e2e3d;
+  --text: #e4e4e4;
+  --text-dim: #888;
+  --text-faint: #555;
+  --border: #333;
+  --border2: #404040;
+  --danger: #a86b6b;
+  --success: #6b9e7a;
+  --warning: #c4956a;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+html { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans JP', sans-serif;
+  min-height: 100%;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Header ──────────────────────────────────── */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  gap: 8px;
+}
+.header-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.app-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.streak-area {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.streak-fire { font-size: 16px; }
+.streak-count { font-weight: 700; color: #e8994a; font-size: 16px; }
+.streak-label { color: var(--text-dim); }
+.streak-best { font-size: 11px; color: var(--text-faint); margin-left: 2px; }
+.settings-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.settings-btn:hover { color: var(--text); background: var(--surface2); }
+
+/* ── Main ────────────────────────────────────── */
+.main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+/* ── Section ─────────────────────────────────── */
+.section { margin-bottom: 28px; }
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+.section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ── Error ───────────────────────────────────── */
+.error-banner {
+  background: rgba(168, 107, 107, 0.15);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #e89090;
+  margin-bottom: 16px;
+  display: none;
+}
+.error-banner.visible { display: block; }
+
+/* ── Loading ─────────────────────────────────── */
+.loading-area {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-dim);
+}
+.spinner {
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  margin: 0 auto 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-label { font-size: 14px; }
+
+/* ── Candidate cards ─────────────────────────── */
+.candidates-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 400px) {
+  .candidates-grid { grid-template-columns: 1fr; }
+}
+
+.candidate-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 14px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s, box-shadow 0.15s;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.candidate-card:hover { border-color: var(--border2); background: var(--surface2); }
+.candidate-card:active { transform: scale(0.97); }
+.candidate-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.candidate-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--cat-color, var(--accent));
+  opacity: 0.8;
+}
+.card-sel-mark {
+  position: absolute;
+  top: 9px; right: 9px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.candidate-card.selected .card-sel-mark { opacity: 1; }
+.card-emoji { font-size: 22px; margin-bottom: 5px; line-height: 1; }
+.card-cat {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: var(--cat-color, var(--accent));
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+.card-text {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  margin-bottom: 7px;
+  color: var(--text);
+}
+.card-dur { font-size: 11px; color: var(--text-faint); }
+
+/* ── Reroll bar ──────────────────────────────── */
+.reroll-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.reroll-hint { font-size: 12px; color: var(--text-faint); }
+
+/* ── Buttons ─────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s, background 0.15s;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.96); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #7a98b6; }
+.btn-ghost { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border2); }
+.btn-ghost:hover { color: var(--text); background: var(--surface3); }
+.btn-danger { background: var(--danger); color: #fff; }
+
+/* ── Today's list ────────────────────────────── */
+.today-list { display: flex; flex-direction: column; gap: 8px; }
+.today-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px 12px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+  transition: opacity 0.2s;
+}
+.today-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--cat-color, var(--accent));
+  border-radius: var(--radius) 0 0 var(--radius);
+  opacity: 0.7;
+}
+.today-item.done { opacity: 0.45; }
+.today-item.done .item-text { text-decoration: line-through; }
+.item-cb {
+  width: 22px; height: 22px;
+  border: 2px solid var(--border2);
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: transparent;
+  color: transparent;
+  transition: all 0.15s;
+  margin-top: 1px;
+  -webkit-tap-highlight-color: transparent;
+}
+.today-item.done .item-cb {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+.item-body { flex: 1; min-width: 0; }
+.item-meta { font-size: 11px; color: var(--text-faint); margin-bottom: 2px; }
+.item-text { font-size: 14px; font-weight: 500; line-height: 1.4; }
+
+/* ── Empty state ─────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 28px 16px;
+  color: var(--text-faint);
+  font-size: 13px;
+  background: var(--surface);
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  line-height: 1.7;
+}
+
+/* ── History ─────────────────────────────────── */
+.hist-toggle {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+}
+.hist-toggle:hover { color: var(--text); }
+.hist-arrow { font-size: 10px; transition: transform 0.2s; }
+.hist-arrow.open { transform: rotate(90deg); }
+.hist-body { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.hist-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+.hist-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.hist-date { font-size: 12px; color: var(--text-dim); }
+.hist-count { font-size: 12px; color: var(--success); font-weight: 500; }
+.hist-none { font-size: 12px; color: var(--text-faint); }
+.hist-tasks { font-size: 11px; color: var(--text-faint); margin-top: 5px; line-height: 1.6; }
+
+/* ── Modal ───────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 20px 16px;
+  backdrop-filter: blur(2px);
+}
+.modal-overlay.hidden { display: none; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  margin: auto;
+}
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
+.form-group { margin-bottom: 18px; }
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.form-input, .form-textarea, .form-select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+  appearance: none;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+  border-color: var(--accent);
+}
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-hint { font-size: 12px; color: var(--text-faint); margin-top: 5px; line-height: 1.5; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; flex-wrap: wrap; }
+.modal-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+.danger-zone { }
+.danger-title { font-size: 12px; font-weight: 700; color: var(--danger); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+
+/* ── Util ────────────────────────────────────── */
+.hidden { display: none !important; }
+.mt8 { margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="app-title">今日のお題</div>
+    <div class="streak-area">
+      <span class="streak-fire">🔥</span>
+      <span class="streak-count" id="streakCount">0</span>
+      <span class="streak-label">日連続</span>
+      <span class="streak-best" id="streakBest">（最高 0日）</span>
+    </div>
+  </div>
+  <button class="settings-btn" onclick="openSettings()" aria-label="設定">⚙</button>
+</header>
+
+<main class="main">
+  <div id="errBanner" class="error-banner"></div>
+
+  <!-- Candidates -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">✨ 今日の候補</div>
+    </div>
+    <div id="candidatesArea">
+      <div class="loading-area">
+        <div class="spinner"></div>
+        <div class="loading-label">読み込み中...</div>
+      </div>
+    </div>
+    <div class="reroll-bar">
+      <button class="btn btn-ghost" id="rerollBtn" onclick="reroll()" disabled>
+        🎲 引き直す
+      </button>
+      <span class="reroll-hint" id="rerollHint"></span>
+    </div>
+  </div>
+
+  <!-- Today's list -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">📋 今日やること</div>
+    </div>
+    <div id="todayList"></div>
+  </div>
+
+  <!-- History -->
+  <div class="section">
+    <button class="hist-toggle" onclick="toggleHistory()">
+      <span class="hist-arrow" id="histArrow">▶</span>
+      <span>過去7日の記録</span>
+    </button>
+    <div id="histBody" class="hist-body hidden"></div>
+  </div>
+</main>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-title">⚙ 設定</div>
+
+    <div class="form-group">
+      <label class="form-label" for="fApiKey">Anthropic APIキー</label>
+      <input type="password" id="fApiKey" class="form-input" placeholder="sk-ant-...">
+      <div class="form-hint">ローカルに保存されます。外部には送信されません（Anthropic APIを除く）。</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="fInterests">好き・得意なこと</label>
+      <input type="text" id="fInterests" class="form-input" placeholder="例：イラスト、料理、プログラミング、同人活動">
+      <div class="form-hint">カンマ区切りで複数OK。お題の方向性のベースになります。</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="fGoal">最終目標・コア動機</label>
+      <textarea id="fGoal" class="form-textarea" placeholder="例：好きな人にとって魅力的な自分になる"></textarea>
+      <div class="form-hint">この目標から逆算してお題が選ばれます。率直に書くほど精度が上がります。</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="fTime">今日使える時間感</label>
+      <select id="fTime" class="form-select">
+        <option value="短め（〜30分）">短め（〜30分）</option>
+        <option value="普通（1〜2時間）" selected>普通（1〜2時間）</option>
+        <option value="がっつり（2時間以上）">がっつり（2時間以上）</option>
+      </select>
+    </div>
+
+    <hr class="modal-divider">
+
+    <div class="danger-zone">
+      <div class="danger-title">データ管理</div>
+      <button class="btn btn-ghost" onclick="clearTodayCache()" style="font-size:12px;padding:7px 12px;">
+        今日のキャッシュを削除して再生成
+      </button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeSettings()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// Storage
+// ════════════════════════════════════════════════
+const ls = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { console.warn('localStorage full', e); } },
+};
+
+const K = {
+  apiKey:      'oda_api_key',
+  profile:     'oda_profile',
+  streak:      'oda_streak',
+  bestStreak:  'oda_best_streak',
+  lastComp:    'oda_last_comp_date',
+  candidates:  d => `oda_cands_${d}`,
+  selected:    d => `oda_sel_${d}`,
+  checks:      d => `oda_chk_${d}`,
+};
+
+// ════════════════════════════════════════════════
+// Date utils
+// ════════════════════════════════════════════════
+const today = new Date().toLocaleDateString('sv'); // YYYY-MM-DD (local tz)
+
+function dateKey(daysAgo) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toLocaleDateString('sv');
+}
+
+function dateLabel(daysAgo) {
+  if (daysAgo === 1) return '昨日';
+  return `${daysAgo}日前`;
+}
+
+// ════════════════════════════════════════════════
+// State
+// ════════════════════════════════════════════════
+let candidates = [];
+let selected   = new Set();
+let checks     = {};
+let loading    = false;
+let histOpen   = false;
+
+// ════════════════════════════════════════════════
+// Category colors  (deterministic hash → palette)
+// ════════════════════════════════════════════════
+const PALETTE = [
+  '#7a9e7a', '#c4956a', '#9b8ab8', '#6b89a8',
+  '#8b9eb8', '#b88a9b', '#9ea88b', '#a8916b',
+  '#6b9ea8', '#a8816b', '#7a8a9e', '#9e8a7a',
+];
+
+function catColor(cat) {
+  let h = 0;
+  for (const c of (cat || '')) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
+  return PALETTE[h % PALETTE.length];
+}
+
+// ════════════════════════════════════════════════
+// Streak
+// ════════════════════════════════════════════════
+function currentDisplayStreak() {
+  const last = ls.get(K.lastComp);
+  const s    = ls.get(K.streak) || 0;
+  // If last completion was before yesterday, streak is broken
+  if (!last || last < dateKey(1)) return 0;
+  return s;
+}
+
+function onCompletion() {
+  const chk = ls.get(K.checks(today)) || {};
+  if (!Object.values(chk).some(Boolean)) { renderStreak(); return; }
+
+  const last = ls.get(K.lastComp);
+  if (last === today) { renderStreak(); return; } // already counted today
+
+  let s = ls.get(K.streak) || 0;
+  s = (last === dateKey(1)) ? s + 1 : 1; // continue or restart
+  ls.set(K.streak, s);
+  ls.set(K.lastComp, today);
+  ls.set(K.bestStreak, Math.max(s, ls.get(K.bestStreak) || 0));
+  renderStreak();
+}
+
+function renderStreak() {
+  document.getElementById('streakCount').textContent = currentDisplayStreak();
+  document.getElementById('streakBest').textContent  = `（最高 ${ls.get(K.bestStreak) || 0}日）`;
+}
+
+// ════════════════════════════════════════════════
+// History analytics → fed to Claude
+// ════════════════════════════════════════════════
+function analyzeHistory() {
+  const stats = {};
+  for (let i = 1; i <= 30; i++) {
+    const key   = dateKey(i);
+    const cands = ls.get(K.candidates(key)) || [];
+    const sel   = ls.get(K.selected(key))   || [];
+    const chk   = ls.get(K.checks(key))     || {};
+    for (const idx of sel) {
+      const cat = cands[idx]?.category || '未分類';
+      if (!stats[cat]) stats[cat] = { sel: 0, done: 0 };
+      stats[cat].sel++;
+      if (chk[idx]) stats[cat].done++;
+    }
+  }
+  const high = [], low = [];
+  for (const [cat, s] of Object.entries(stats)) {
+    if (s.sel < 2) continue;
+    const r = s.done / s.sel;
+    if (r >= 0.6) high.push(cat);
+    else if (r < 0.3) low.push(cat);
+  }
+  return { high, low };
+}
+
+function recentTopics(limit = 20) {
+  const seen = new Set(), out = [];
+  for (let i = 1; i <= 14 && out.length < limit; i++) {
+    const key   = dateKey(i);
+    const cands = ls.get(K.candidates(key)) || [];
+    const sel   = ls.get(K.selected(key))   || [];
+    for (const idx of sel) {
+      const t = cands[idx]?.text;
+      if (t && !seen.has(t)) { seen.add(t); out.push(t); }
+    }
+  }
+  return out;
+}
+
+// ════════════════════════════════════════════════
+// Claude API
+// ════════════════════════════════════════════════
+async function callClaude(alreadySelectedTexts) {
+  const apiKey = ls.get(K.apiKey);
+  if (!apiKey) throw new Error('APIキーが設定されていません。右上の ⚙ から設定してください。');
+
+  const profile = ls.get(K.profile) || {};
+  const { high, low } = analyzeHistory();
+  const recent  = recentTopics();
+
+  const profileBlock = [
+    profile.interests    ? `好き・得意: ${profile.interests}` : '',
+    profile.goal         ? `最終目標・コア動機: ${profile.goal}` : '',
+    profile.timeAvailable ? `今日使える時間: ${profile.timeAvailable}` : '',
+  ].filter(Boolean).join('\n') || '（未設定）';
+
+  const histBlock = [
+    high.length ? `完了率の高いカテゴリ（好んでいる）: ${high.join(', ')}` : '',
+    low.length  ? `選ぶが完了率低いカテゴリ: ${low.join(', ')}` : '',
+  ].filter(Boolean).join('\n');
+
+  const system = `あなたは自分磨きの提案をするコーチです。
+ユーザーが今日1日で取り組める自分磨きのお題を5つ提案してください。
+
+【お題の条件】
+- 今日中に1人で実行できる、具体的な行動レベルの粒度
+- 読んだ瞬間に「やってみたい！」と思えるような表現・言葉選び
+- ユーザーの最終目標から逆算して「これをやると目標に近づく」と感じられるもの
+- 5枚のうち1〜2枚は、ユーザーの普段の興味圏外だが人間的な魅力・深みにつながる意外な提案にする
+- カテゴリが偏らないように（同じカテゴリを複数出さない）
+
+必ず以下のJSON配列形式のみで返してください。前後の説明文・マークダウン記号は一切不要。
+[{"category":"カテゴリ名(2〜4文字)","emoji":"絵文字1文字","text":"お題テキスト(25文字以内)","duration":"〜XX分"},...]`;
+
+  const parts = [
+    '【私について】',
+    profileBlock,
+  ];
+  if (histBlock) {
+    parts.push('\n【過去の傾向（参考）】', histBlock);
+  }
+  if (recent.length) {
+    parts.push('\n【最近やったお題（重複しないように）】', recent.slice(0, 12).map(t => `- ${t}`).join('\n'));
+  }
+  if (alreadySelectedTexts.length) {
+    parts.push('\n【今日すでに選んだお題（これ以外を提案）】', alreadySelectedTexts.map(t => `- ${t}`).join('\n'));
+  }
+  parts.push('\n5つのお題を提案してください。');
+  const user = parts.join('\n').trim();
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      system,
+      messages: [{ role: 'user', content: user }],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `API Error ${res.status}`);
+  }
+
+  const data = await res.json();
+  const text  = data.content?.[0]?.text || '';
+  const match = text.match(/\[[\s\S]*?\]/);
+  if (!match) throw new Error('APIのレスポンス形式が不正です（JSONが見つかりません）');
+  const parsed = JSON.parse(match[0]);
+  if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('空のレスポンスが返されました');
+  return parsed;
+}
+
+// ════════════════════════════════════════════════
+// Render — candidates
+// ════════════════════════════════════════════════
+function renderCandidates() {
+  const area      = document.getElementById('candidatesArea');
+  const rerollBtn = document.getElementById('rerollBtn');
+  const hint      = document.getElementById('rerollHint');
+
+  if (loading) {
+    area.innerHTML = `
+      <div class="loading-area">
+        <div class="spinner"></div>
+        <div class="loading-label">Claude がお題を考えています...</div>
+      </div>`;
+    rerollBtn.disabled = true;
+    return;
+  }
+
+  if (candidates.length === 0) {
+    area.innerHTML = `<div class="empty-state">⚙ 設定からAPIキーとプロフィールを入力すると<br>お題が自動で生成されます</div>`;
+    rerollBtn.disabled = false;
+    hint.textContent = '';
+    return;
+  }
+
+  // Show only the latest 5 candidates (or all if ≤5)
+  const display = candidates.slice(-5);
+  const offset  = candidates.length - display.length; // index offset
+
+  const grid = document.createElement('div');
+  grid.className = 'candidates-grid';
+
+  display.forEach((c, localIdx) => {
+    const i     = offset + localIdx;
+    const color = catColor(c.category);
+    const isSel = selected.has(i);
+
+    const card = document.createElement('div');
+    card.className = 'candidate-card' + (isSel ? ' selected' : '');
+    card.style.setProperty('--cat-color', color);
+    card.onclick = () => toggleCandidate(i);
+    card.innerHTML = `
+      <div class="card-sel-mark">✓</div>
+      <div class="card-emoji">${c.emoji || '📌'}</div>
+      <div class="card-cat">${esc(c.category || '')}</div>
+      <div class="card-text">${esc(c.text || '')}</div>
+      <div class="card-dur">${esc(c.duration || '')}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  area.innerHTML = '';
+  area.appendChild(grid);
+  rerollBtn.disabled = false;
+  hint.textContent = candidates.length > 5
+    ? `引き直し累計 ${Math.floor(candidates.length / 5)} 回（${candidates.length} 件から表示中）`
+    : '';
+}
+
+// ════════════════════════════════════════════════
+// Render — today's list
+// ════════════════════════════════════════════════
+function renderTodayList() {
+  const list  = document.getElementById('todayList');
+  const items = [...selected]
+    .sort((a, b) => a - b)
+    .map(i => ({ i, ...candidates[i] }))
+    .filter(x => x.text);
+
+  if (items.length === 0) {
+    list.innerHTML = `<div class="empty-state">候補カードをタップして<br>今日やることを選ぼう</div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  items.forEach(item => {
+    const done  = !!checks[item.i];
+    const color = catColor(item.category);
+
+    const el = document.createElement('div');
+    el.className = 'today-item' + (done ? ' done' : '');
+    el.style.setProperty('--cat-color', color);
+    el.innerHTML = `
+      <button class="item-cb" onclick="toggleCheck(${item.i})" aria-label="完了切替">${done ? '✓' : ''}</button>
+      <div class="item-body">
+        <div class="item-meta">${item.emoji || ''} ${esc(item.category || '')} · ${esc(item.duration || '')}</div>
+        <div class="item-text">${esc(item.text || '')}</div>
+      </div>
+    `;
+    list.appendChild(el);
+  });
+}
+
+// ════════════════════════════════════════════════
+// Actions
+// ════════════════════════════════════════════════
+function toggleCandidate(i) {
+  selected.has(i) ? selected.delete(i) : selected.add(i);
+  ls.set(K.selected(today), [...selected]);
+  renderCandidates();
+  renderTodayList();
+}
+
+function toggleCheck(i) {
+  checks[i] = !checks[i];
+  ls.set(K.checks(today), checks);
+  onCompletion();
+  renderTodayList();
+}
+
+async function reroll() {
+  if (loading) return;
+  loading = true;
+  showError(null);
+  renderCandidates();
+
+  try {
+    const alreadyTexts = [...selected].map(i => candidates[i]?.text).filter(Boolean);
+    const newCands = await callClaude(alreadyTexts);
+    candidates = [...candidates, ...newCands];
+    if (candidates.length > 50) candidates = candidates.slice(-50); // cap
+    ls.set(K.candidates(today), candidates);
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    loading = false;
+    renderCandidates();
+  }
+}
+
+// ════════════════════════════════════════════════
+// History
+// ════════════════════════════════════════════════
+function toggleHistory() {
+  histOpen = !histOpen;
+  const arrow = document.getElementById('histArrow');
+  const body  = document.getElementById('histBody');
+  arrow.classList.toggle('open', histOpen);
+  if (histOpen) { renderHistory(); body.classList.remove('hidden'); }
+  else body.classList.add('hidden');
+}
+
+function renderHistory() {
+  const body = document.getElementById('histBody');
+  body.innerHTML = '';
+
+  for (let i = 1; i <= 7; i++) {
+    const key   = dateKey(i);
+    const cands = ls.get(K.candidates(key)) || [];
+    const sel   = ls.get(K.selected(key))   || [];
+    const chk   = ls.get(K.checks(key))     || {};
+    const total = sel.length;
+    const done  = sel.filter(idx => chk[idx]).length;
+
+    const tasks = sel
+      .map(idx => { const c = cands[idx]; return c ? `${chk[idx] ? '✓' : '·'} ${c.text}` : null; })
+      .filter(Boolean);
+
+    const row = document.createElement('div');
+    row.className = 'hist-row';
+    row.innerHTML = `
+      <div class="hist-header">
+        <span class="hist-date">${dateLabel(i)}（${key}）</span>
+        ${total
+          ? `<span class="hist-count">${done} / ${total} 完了</span>`
+          : `<span class="hist-none">記録なし</span>`}
+      </div>
+      ${tasks.length ? `<div class="hist-tasks">${tasks.map(esc).join('　')}</div>` : ''}
+    `;
+    body.appendChild(row);
+  }
+}
+
+// ════════════════════════════════════════════════
+// Settings modal
+// ════════════════════════════════════════════════
+function openSettings() {
+  const p = ls.get(K.profile) || {};
+  document.getElementById('fApiKey').value    = ls.get(K.apiKey) || '';
+  document.getElementById('fInterests').value = p.interests || '';
+  document.getElementById('fGoal').value      = p.goal || '';
+  document.getElementById('fTime').value      = p.timeAvailable || '普通（1〜2時間）';
+  document.getElementById('settingsModal').classList.remove('hidden');
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.add('hidden');
+}
+
+function saveSettings() {
+  const apiKey = document.getElementById('fApiKey').value.trim();
+  if (!apiKey) { alert('APIキーを入力してください'); return; }
+  const hadKey = !!ls.get(K.apiKey);
+  ls.set(K.apiKey, apiKey);
+  ls.set(K.profile, {
+    interests:     document.getElementById('fInterests').value.trim(),
+    goal:          document.getElementById('fGoal').value.trim(),
+    timeAvailable: document.getElementById('fTime').value,
+  });
+  closeSettings();
+  if (!hadKey && candidates.length === 0) reroll();
+}
+
+function clearTodayCache() {
+  if (!confirm('今日の候補をリセットして再生成しますか？')) return;
+  localStorage.removeItem(K.candidates(today));
+  localStorage.removeItem(K.selected(today));
+  candidates = [];
+  selected   = new Set();
+  closeSettings();
+  reroll();
+}
+
+// Close modal on overlay click
+document.getElementById('settingsModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeSettings();
+});
+
+// ════════════════════════════════════════════════
+// Error
+// ════════════════════════════════════════════════
+function showError(msg) {
+  const el = document.getElementById('errBanner');
+  el.textContent = msg ? '⚠ ' + msg : '';
+  el.classList.toggle('visible', !!msg);
+}
+
+// ════════════════════════════════════════════════
+// Utils
+// ════════════════════════════════════════════════
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ════════════════════════════════════════════════
+// Init
+// ════════════════════════════════════════════════
+(async function init() {
+  renderStreak();
+
+  const apiKey = ls.get(K.apiKey);
+  if (!apiKey) {
+    // First launch: open settings, show empty state
+    renderCandidates();
+    renderTodayList();
+    openSettings();
+    return;
+  }
+
+  // Restore today's state from cache
+  candidates = ls.get(K.candidates(today)) || [];
+  selected   = new Set(ls.get(K.selected(today)) || []);
+  checks     = ls.get(K.checks(today)) || {};
+
+  if (candidates.length === 0) {
+    // New day: auto-generate
+    loading = true;
+    renderCandidates();
+    renderTodayList();
+    try {
+      candidates = await callClaude([]);
+      ls.set(K.candidates(today), candidates);
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      loading = false;
+    }
+  }
+
+  renderCandidates();
+  renderTodayList();
+})();
+</script>
+</body>
+</html>
